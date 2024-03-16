@@ -109,24 +109,24 @@ jobs:
 # ===============================================================
 # ===============================================================
 # ===============================================================
-  # Mac-ARM:
-  #   runs-on: macos-latest-xlarge
-  #   steps:
-  #   - uses: actions/checkout@v4
-  #     with:
-  #       submodules: recursive
+  Mac-ARM:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
 
-  #   - name: set Enviroment
-  #     run: |
-  #       brew cleanup --prune=all
-  #       brew install --cask pd
+    - name: set Enviroment
+      run: |
+        brew cleanup --prune=all
+        brew install --cask pd
 
-  #   - name: Build pd-SoundHack
-  #     run: |
-  #       make install PDLIBDIR=./pd-SoundHack
+    - name: Build pd-SoundHack
+      run: |
+        make install PDLIBDIR=./pd-SoundHack arch=arm64
 
-  #   - name: Upload Zip
-  #     uses: actions/upload-artifact@v4
-  #     with:
-  #       name: SoundHack-macoOS-arm
-  #       path: ./pd-SoundHack/*
+    - name: Upload Zip
+      uses: actions/upload-artifact@v4
+      with:
+        name: SoundHack-macoOS-arm
+        path: ./pd-SoundHack/*
