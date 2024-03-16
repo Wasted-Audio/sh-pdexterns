@@ -20,27 +20,27 @@ typedef struct _matrix_tilde
 	float x_midGain;
 	float x_sideGain;
 	int x_direction;
-    float x_f; 
+    float x_f;
 } t_matrix_tilde;
 
 static void matrix_tilde_midGain(t_matrix_tilde *x, t_floatarg mg)
-{	
+{
 	if(mg > 12.0 || mg < -12.0)
-		error("value must be >= -12.0dB and <= 12.0dB.");
+		pd_error(x, "value must be >= -12.0dB and <= 12.0dB.");
 	else
 		x->x_midGain = pow(10.0, mg*0.05);
 }
 
 static void matrix_tilde_sideGain(t_matrix_tilde *x, t_floatarg sg)
-{	
+{
 	if(sg > 12.0 || sg < -12.0)
-		error("value must be >= -12.0dB and <= 12.0dB.");
+		pd_error(x, "value must be >= -12.0dB and <= 12.0dB.");
 	else
 		x->x_sideGain = pow(10.0, sg*0.05);
 }
 
 static void matrix_tilde_direction(t_matrix_tilde *x, t_floatarg d)
-{	
+{
 	if(d > 1.0)
 		x->x_direction = 1;
 	else if(d < 0.0)
@@ -63,14 +63,14 @@ static void *matrix_tilde_new()
 	x->x_n = 64.0;
 	x->x_midGain = x->x_sideGain = 1.0;
 	x->x_direction = 0;
-	
+
 	return(void *)x;
 };
 
 static t_int *matrix_tilde_perform(t_int *w)
 {
 	t_matrix_tilde *x = (t_matrix_tilde *)(w[1]);
-	
+
 	t_sample *in1 = (t_sample *)(w[2]);
 	t_sample *in2 = (t_sample *)(w[3]);
 	t_sample *out1 = (t_sample *)(w[4]);
@@ -82,7 +82,7 @@ static t_int *matrix_tilde_perform(t_int *w)
 	float mid, side, left, right;
 
 	framesLeft = n;
-	
+
 	// LR to MS - false - 0
 	// MS to LR - true - 1
 	if(x->x_direction == 0)
@@ -106,7 +106,7 @@ static t_int *matrix_tilde_perform(t_int *w)
 			out2[frame] = (mid * x->x_midGain) - (side * x->x_sideGain); // r = m - s
 		}
 	}
-	
+
 	return(w + 7);
 };
 
@@ -132,7 +132,7 @@ static void matrix_tilde_dsp(t_matrix_tilde *x, t_signal **sp)
 
 void setup_0x2bmatrix_tilde(void)
 {
-	matrix_tilde_class = 
+	matrix_tilde_class =
 	class_new(
 		gensym("+matrix~"),
 		(t_newmethod)matrix_tilde_new,
@@ -152,7 +152,7 @@ void setup_0x2bmatrix_tilde(void)
 	);
 
 	class_addmethod(
-		matrix_tilde_class, 
+		matrix_tilde_class,
         (t_method)matrix_tilde_midGain,
 		gensym("midGain"),
 		A_DEFFLOAT,
@@ -160,7 +160,7 @@ void setup_0x2bmatrix_tilde(void)
 	);
 
 	class_addmethod(
-		matrix_tilde_class, 
+		matrix_tilde_class,
         (t_method)matrix_tilde_sideGain,
 		gensym("sideGain"),
 		A_DEFFLOAT,
@@ -168,7 +168,7 @@ void setup_0x2bmatrix_tilde(void)
 	);
 
 	class_addmethod(
-		matrix_tilde_class, 
+		matrix_tilde_class,
         (t_method)matrix_tilde_direction,
 		gensym("direction"),
 		A_DEFFLOAT,

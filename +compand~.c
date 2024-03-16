@@ -55,12 +55,12 @@ static void compand_tilde_compInitGainTable(t_compand_tilde *x)
         {
             insignal = (i + 1) *.0001220703125f; // i+1/8192
             indecibel = 20.0f * log10(insignal);
-            
+
             if(insignal <= x->x_compSoftLowThreshold)
                 x->x_compGainTable[i] = 1.0f;
             else if(insignal > x->x_compSoftLowThreshold && insignal <= x->x_compSoftHighThreshold)
             {
-                gaindecibel = ((x->x_threshold - indecibel) 
+                gaindecibel = ((x->x_threshold - indecibel)
                     * (1.0f - x->x_ratio)) * ((indecibel - x->x_compDBSoftLowThreshold)/(x->x_softKnee * 12.0f));
                 x->x_compGainTable[i] = pow(10.0f, gaindecibel * 0.05f);
             }
@@ -80,7 +80,7 @@ static void compand_tilde_compInitGainTable(t_compand_tilde *x)
                 x->x_compGainTable[i] = 1.0f;
             else if(insignal > x->x_compSoftLowThreshold && insignal <= x->x_compSoftHighThreshold)
             {
-                gaindecibel = ((indecibel - x->x_threshold) 
+                gaindecibel = ((indecibel - x->x_threshold)
                     * (x->x_ratio - 1.0f)) * ((x->x_compSoftHighThreshold - indecibel)/(x->x_softKnee * 12.0f));
                 x->x_compGainTable[i] = pow(10.0f, gaindecibel * 0.05f);
             }
@@ -113,18 +113,18 @@ static float compand_tilde_compRMSDetect(t_compand_tilde *x, float in)
             x->x_compRMSPosition = 0;
 	if(x->x_compRMSPosition < 0)
             x->x_compRMSPosition = 0;
-    
+
     // FIRST: square the new sample
     // in range -1.0 to 1.0
     // square range 0.0 to 1.0
     square = in * in;
-    
+
     // SECOND: add to array to calculate mean
     // arraytotal range 0.0 to comprmsarrarysize
     x->x_compRMSArrayTotal = x->x_compRMSArrayTotal - x->x_compSquareArray[x->x_compRMSPosition] + square;
     x->x_compSquareArray[x->x_compRMSPosition] = square;
     x->x_compRMSPosition++;
-    
+
     // THIRD: meansquare needs to be scaled up to 65535 for root table lookup
     meansquare = (int32_t)(x->x_compRMSArrayTotal * x->x_compRMSScale);
 	if(meansquare > 65535)
@@ -136,37 +136,37 @@ static float compand_tilde_compRMSDetect(t_compand_tilde *x, float in)
 
 
 static void compand_tilde_ratio(t_compand_tilde *x, t_floatarg value)
-{	
+{
 	if(value > 10.0)
 	{
 	// expansion
-		error("ratio value must be >= 0.01 and <= 10.0");
+		pd_error(x, "ratio value must be >= 0.01 and <= 10.0");
 		value = 10.0;
 	}
 	else if(value < 0.01)
 	{
 	// compression
-		error("ratio value must be >= 0.01 and <= 10.0");
+		pd_error(x, "ratio value must be >= 0.01 and <= 10.0");
 		value = 0.01;
 	};
-		
-	x->x_ratio = value;				
+
+	x->x_ratio = value;
 	compand_tilde_compInitGainTable(x);
 }
 
 static void compand_tilde_threshold(t_compand_tilde *x, t_floatarg threshold)
 {
 	float compLinearThreshold;
-	
-	
+
+
 	if(threshold > 0.0 || threshold < -96.0)
-		error("threshold value must be >= -96.0dB and <= 0.0dB.");
+		pd_error(x, "threshold value must be >= -96.0dB and <= 0.0dB.");
 	else
 		x->x_threshold = threshold;
 
 
     compLinearThreshold = pow(10.0f, (x->x_threshold * 0.05f));
-    
+
     if(x->x_softKnee == 0.0f)
     {
         x->x_compSoftLowThreshold = x->x_compSoftHighThreshold = compLinearThreshold;
@@ -185,9 +185,9 @@ static void compand_tilde_threshold(t_compand_tilde *x, t_floatarg threshold)
 }
 
 static void compand_tilde_attack(t_compand_tilde *x, t_floatarg attack)
-{	
+{
 	if(attack > 100.0 || attack < 1.0)
-		error("attack value must be >= 1.0ms and <= 100.0ms.");
+		pd_error(x, "attack value must be >= 1.0ms and <= 100.0ms.");
 	else
 		x->x_attack = attack/1000;
 
@@ -196,9 +196,9 @@ static void compand_tilde_attack(t_compand_tilde *x, t_floatarg attack)
 }
 
 static void compand_tilde_release(t_compand_tilde *x, t_floatarg release)
-{	
+{
 	if(release > 2000.0 || release < 100.0)
-		error("release value must be >= 100ms and <= 2000.0ms.");
+		pd_error(x, "release value must be >= 100ms and <= 2000.0ms.");
 	else
 		x->x_release = release/1000;
 
@@ -207,9 +207,9 @@ static void compand_tilde_release(t_compand_tilde *x, t_floatarg release)
 }
 
 static void compand_tilde_softKnee(t_compand_tilde *x, t_floatarg softKnee)
-{	
+{
 	if(softKnee > 1.0 || softKnee < 0.0)
-		error("softKnee value must be >= 0.0 and <= 1.0.");
+		pd_error(x, "softKnee value must be >= 0.0 and <= 1.0.");
 	else
 		x->x_softKnee = softKnee;
 
@@ -217,22 +217,22 @@ static void compand_tilde_softKnee(t_compand_tilde *x, t_floatarg softKnee)
 }
 
 static void compand_tilde_makeupGain(t_compand_tilde *x, t_floatarg makeupGain)
-{	
+{
 	if(makeupGain > 60.0 || makeupGain < 0.0)
-		error("makeupGain value must be >= 0.0dB and <= 60.0dB.");
+		pd_error(x, "makeupGain value must be >= 0.0dB and <= 60.0dB.");
 	else
 		x->x_makeupGain = pow(10.0f, makeupGain*0.05f);
 }
 
 static void compand_tilde_rms_detect(t_compand_tilde *x, t_floatarg rms)
-{	
+{
 	if(rms > 1.0)
 		rms=1.0;
 	else if(rms < 0.0)
 		rms=0.0;
 	else
 		x->x_RMSLevelDetect = rms;
-	
+
 	if(x->x_RMSLevelDetect==1)
 		post("RMS Level Detect Mode.");
 	else
@@ -240,14 +240,14 @@ static void compand_tilde_rms_detect(t_compand_tilde *x, t_floatarg rms)
 }
 
 static void *compand_tilde_new()
-{	
+{
 	t_compand_tilde *x = (t_compand_tilde *)pd_new(compand_tilde_class);
 	int i;
 
     inlet_new(&x->x_obj, &x->x_obj.ob_pd, gensym("float"), gensym("ratio"));
     inlet_new(&x->x_obj, &x->x_obj.ob_pd, gensym("float"), gensym("threshold"));
 	outlet_new(&x->x_obj, &s_signal);
-	
+
 	x->x_sr = 44100.0;
 	x->x_n = 64.0;
 	x->x_compReleaseLevel = 0.0;
@@ -269,7 +269,7 @@ static void *compand_tilde_new()
 
     for(i=0; i<8192; i++)
 	    x->x_compGainTable[i] = 0.0;
-          
+
 	x->x_ratio = 39.0f/42.0f;
 	x->x_gain = 1.0;
 	x->x_RMSLevelDetect = 0;
@@ -287,21 +287,21 @@ static void *compand_tilde_new()
 
 	// init compGainTable
 	compand_tilde_compInitGainTable(x);
-	
+
 	return(void *)x;
 };
 
 static t_int *compand_tilde_perform(t_int *w)
 {
 	t_compand_tilde *x = (t_compand_tilde *)(w[1]);
-	
+
 	t_sample *in1 = (t_sample *)(w[2]);
 	t_sample *out = (t_sample *)(w[3]);
 	int n = (int)(w[4]);
 
     float level, gainmix, flevelindex;
     int32_t levelindex, sample;
-	
+
 	for(sample=0; sample<n; sample++)
 	{
 		x->x_compReleaseLevel *= x->x_compReleaseMult;
@@ -311,7 +311,7 @@ static t_int *compand_tilde_perform(t_int *w)
 		else
 			level = compand_tilde_compPeakDetect(*(in1+sample));
 		// release algorithm before attack algorithm
-				
+
 		if(level > 1.0)
 			level = 1.0;
 		if(level < x->x_compReleaseLevel)
@@ -322,7 +322,7 @@ static t_int *compand_tilde_perform(t_int *w)
 			x->x_compReleaseLevel = x->x_compAttackLevel = 0.00001f;
 		else
 			x->x_compReleaseLevel = x->x_compAttackLevel = level;
-		
+
 		flevelindex = level * 8191.0f;
 
 		levelindex = (int32_t)flevelindex;
@@ -330,7 +330,7 @@ static t_int *compand_tilde_perform(t_int *w)
 		if(levelindex == 8191)
 			x->x_gain = x->x_gain * 0.5f + 0.5f * x->x_compGainTable[levelindex];
 		else
-			x->x_gain = x->x_gain * 0.5f + 0.5f * (x->x_compGainTable[levelindex] 
+			x->x_gain = x->x_gain * 0.5f + 0.5f * (x->x_compGainTable[levelindex]
 				+ (x->x_compGainTable[levelindex+1] - x->x_compGainTable[levelindex]) * gainmix);
 		*(out + sample) = *(in1 + sample) * x->x_gain * x->x_makeupGain;
 	};
@@ -359,7 +359,7 @@ static void compand_tilde_dsp(t_compand_tilde *x, t_signal **sp)
 // unusual name for setup routine to allow for "+".
 void setup_0x2bcompand_tilde(void)
 {
-	compand_tilde_class = 
+	compand_tilde_class =
 	class_new(
 		gensym("+compand~"),
 		(t_newmethod)compand_tilde_new,
@@ -379,7 +379,7 @@ void setup_0x2bcompand_tilde(void)
 	);
 
 	class_addmethod(
-		compand_tilde_class, 
+		compand_tilde_class,
         (t_method)compand_tilde_ratio,
 		gensym("ratio"),
 		A_DEFFLOAT,
@@ -387,7 +387,7 @@ void setup_0x2bcompand_tilde(void)
 	);
 
 	class_addmethod(
-		compand_tilde_class, 
+		compand_tilde_class,
         (t_method)compand_tilde_threshold,
 		gensym("threshold"),
 		A_DEFFLOAT,
@@ -395,7 +395,7 @@ void setup_0x2bcompand_tilde(void)
 	);
 
 	class_addmethod(
-		compand_tilde_class, 
+		compand_tilde_class,
         (t_method)compand_tilde_attack,
 		gensym("attack"),
 		A_DEFFLOAT,
@@ -403,15 +403,15 @@ void setup_0x2bcompand_tilde(void)
 	);
 
 	class_addmethod(
-		compand_tilde_class, 
+		compand_tilde_class,
         (t_method)compand_tilde_release,
 		gensym("release"),
 		A_DEFFLOAT,
 		0
 	);
-	
+
 	class_addmethod(
-		compand_tilde_class, 
+		compand_tilde_class,
         (t_method)compand_tilde_softKnee,
 		gensym("softKnee"),
 		A_DEFFLOAT,
@@ -419,7 +419,7 @@ void setup_0x2bcompand_tilde(void)
 	);
 
 	class_addmethod(
-		compand_tilde_class, 
+		compand_tilde_class,
         (t_method)compand_tilde_makeupGain,
 		gensym("makeupGain"),
 		A_DEFFLOAT,
@@ -427,7 +427,7 @@ void setup_0x2bcompand_tilde(void)
 	);
 
 	class_addmethod(
-		compand_tilde_class, 
+		compand_tilde_class,
         (t_method)compand_tilde_rms_detect,
 		gensym("rmsDetect"),
 		A_DEFFLOAT,

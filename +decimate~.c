@@ -31,16 +31,16 @@ typedef struct _decimate_tilde
 
 
 static void decimate_tilde_depth(t_decimate_tilde *x, t_floatarg d)
-{	
+{
 	unsigned long mask, bit;
 	long i, bitDepth;
-	
+
 	if(d>32.0 || d<1.0)
-		error("depth value must be >= 1.0 and <= 24.0.");
+		pd_error(x, "depth value must be >= 1.0 and <= 24.0.");
 	else
 	{
 		bitDepth = (long)d;
-		x->x_maskMix = d - bitDepth;		
+		x->x_maskMix = d - bitDepth;
 		mask = 0;
 		for(i = 0, bit = 0x80000000UL; i < bitDepth; i++)
 		{
@@ -55,13 +55,13 @@ static void decimate_tilde_depth(t_decimate_tilde *x, t_floatarg d)
 			bit = bit>>1;
 		}
 		x->x_lMask2 = mask;
-	};	
+	};
 }
 
 static void decimate_tilde_folds(t_decimate_tilde *x, t_floatarg f)
-{	
+{
 	if(f>8.0 || f<0.0)
-		error("folds value must be between 0 and 8.");
+		pd_error(x, "folds value must be between 0 and 8.");
 	else
 	{
 		x->x_avg = powf(2.0, f);
@@ -70,7 +70,7 @@ static void decimate_tilde_folds(t_decimate_tilde *x, t_floatarg f)
 }
 
 static void *decimate_tilde_new()
-{	
+{
 	t_decimate_tilde *x = (t_decimate_tilde *)pd_new(decimate_tilde_class);
 	int i;
 
@@ -90,7 +90,7 @@ static void *decimate_tilde_new()
 	// init out buffer
 	for(i=0; i<STDBLOCK; i++)
 		x->x_outBuffer[i] = 0.0;
-		
+
 	x->x_n = 64;
 	x->x_block = STDBLOCK;
 	x->x_lMask = 0xffffffff;
@@ -108,7 +108,7 @@ static t_int *decimate_tilde_perform(t_int *w)
 	float tmp, maskMix, avgScale;
 	int32_t longTmp, lMask, lMask2;
 	t_decimate_tilde *x = (t_decimate_tilde *)(w[1]);
-	
+
 	t_sample *in1 = (t_sample *)(w[2]);
 	t_sample *out = (t_sample *)(w[3]);
 	int n = (int)(w[4]);
@@ -116,7 +116,7 @@ static t_int *decimate_tilde_perform(t_int *w)
 
 	// grab a pointer to outBuffer for the final while(n--)
 	pOutBuffer = x->x_outBuffer;
-	
+
 	// rename dataspace variables locally
 	block = x->x_block;
 	avg = (int)x->x_avg;
@@ -132,37 +132,37 @@ static t_int *decimate_tilde_perform(t_int *w)
 	// shift signal buffer contents back.
 	for(i=0; i<(block-n); i++)
 		x->x_inBuffer[i] = x->x_inBuffer[i+n];
-	
+
 	// write new block to end of signal buffer.
 	for(i=0; i<n; i++)
 		x->x_inBuffer[block-n+i] = in1[i];
-	
+
 	for(i=0; i<n; i+=avg)
 	{
 		for(j=0, tmp=0; j<avg; j++)
 			tmp += x->x_inBuffer[i+j];
 
 		tmp *= avgScale; // avoid divides using precomputed avgScale
-		
+
 		for(j=0, longTmp=0; j<avg; j++)
-		{	
+		{
 			longTmp = (int32_t)(tmp * 2147483647.0f);
 			longTmp = (int32_t)((longTmp & lMask) + ((longTmp & lMask2) - (longTmp & lMask)) * maskMix);
 			x->x_outBuffer[i+j] = (float)longTmp * 0.0000000004656612875245797f;
 		};
-	};	
+	};
 
-	
+
 	while(n--)
 		*out++ = *pOutBuffer++;
-	
+
 	return(w+5);
 };
 
 static void decimate_tilde_dsp(t_decimate_tilde *x, t_signal **sp)
 {
 	int i;
-	
+
 	dsp_add(
 		decimate_tilde_perform,
 		4,
@@ -171,7 +171,7 @@ static void decimate_tilde_dsp(t_decimate_tilde *x, t_signal **sp)
 		sp[1]->s_vec,
 		sp[0]->s_n
 	);
-	
+
 	// update blocksize if it has changed
 	if(x->x_n != sp[0]->s_n)
 	{
@@ -179,36 +179,36 @@ static void decimate_tilde_dsp(t_decimate_tilde *x, t_signal **sp)
 		{
 			// resize signal buffer
 			x->x_inBuffer = (t_sample *)t_resizebytes(x->x_inBuffer, x->x_block * sizeof(t_sample), sp[0]->s_n * sizeof(t_sample));
-				
+
 			// init signal buffer
 			for(i=0; i<sp[0]->s_n; i++)
 				x->x_inBuffer[i] = 0.0;
 
 			// resize out buffer
 			x->x_outBuffer = (t_sample *)t_resizebytes(x->x_outBuffer, x->x_block * sizeof(t_sample), sp[0]->s_n * sizeof(t_sample));
-				
+
 			// init out buffer
 			for(i=0; i<sp[0]->s_n; i++)
 				x->x_outBuffer[i] = 0.0;
-				
+
 			x->x_block = sp[0]->s_n;
 		}
 		else if( (sp[0]->s_n <= STDBLOCK) && (x->x_n > STDBLOCK) )
 		{
 			// resize signal buffer
 			x->x_inBuffer = (t_sample *)t_resizebytes(x->x_inBuffer, x->x_block * sizeof(t_sample), STDBLOCK * sizeof(t_sample));
-				
+
 			// init signal buffer
 			for(i=0; i<STDBLOCK; i++)
 				x->x_inBuffer[i] = 0.0;
 
 			// resize out buffer
 			x->x_outBuffer = (t_sample *)t_resizebytes(x->x_outBuffer, x->x_block * sizeof(t_sample), STDBLOCK * sizeof(t_sample));
-				
+
 			// init out buffer
 			for(i=0; i<STDBLOCK; i++)
 				x->x_outBuffer[i] = 0.0;
-				
+
 			x->x_block = STDBLOCK;
 		};
 
@@ -231,7 +231,7 @@ static void decimate_tilde_free(t_decimate_tilde *x)
 // unusual name for setup routine to allow for "+".
 void setup_0x2bdecimate_tilde(void)
 {
-	decimate_tilde_class = 
+	decimate_tilde_class =
 	class_new(
 		gensym("+decimate~"),
 		(t_newmethod)decimate_tilde_new,
@@ -251,7 +251,7 @@ void setup_0x2bdecimate_tilde(void)
 	);
 
 	class_addmethod(
-		decimate_tilde_class, 
+		decimate_tilde_class,
         (t_method)decimate_tilde_depth,
 		gensym("depth"),
 		A_DEFFLOAT,
@@ -259,7 +259,7 @@ void setup_0x2bdecimate_tilde(void)
 	);
 
 	class_addmethod(
-		decimate_tilde_class, 
+		decimate_tilde_class,
         (t_method)decimate_tilde_folds,
 		gensym("folds"),
 		A_DEFFLOAT,

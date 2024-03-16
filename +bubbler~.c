@@ -35,17 +35,17 @@ typedef struct singleGrain
 typedef struct _bubbler_tilde
 {
 	t_object x_obj;
-	
+
 	uint32_t x_randSeed;
 	float x_sr;
-	float x_n;	
-	
+	float x_n;
+
 	t_singleGrain x_grain[8];
-	
+
 	float x_delay[DELAYSIZE];
 	long x_delayMask;
 	long x_delaySize;
-	
+
 	long x_readPos;
 	long x_writePos;
 	long x_currentSample;
@@ -56,17 +56,17 @@ typedef struct _bubbler_tilde
 	float x_timeInc;
 	float x_timeVariation;
 	float x_fTimeVariation;
-	
+
 	float x_feedback;
 	float x_fFeedback;
 	float x_filterFreq;
 	float x_fFilterFreq;
 	float x_resonance;
 	float x_fResonance;
-	
+
 	float x_density;
 	float x_fDensity;
-	
+
 	float x_grainSpacing;
 	float x_grainSize;
 	float x_fGrain_size;
@@ -76,14 +76,14 @@ typedef struct _bubbler_tilde
 	float x_fGrainStartVariation;
 	float x_grainReversal;
 	float x_fGrainReversal;
-	
+
 	float x_octave;
 	float x_fOctave;
 	float x_octaveVariation;
 	float x_fOctaveVariation;
-	
+
 	int x_just;
-	
+
 	long x_numNotes;
 	long x_pitchOn[12];
 	float x_pitch[12];
@@ -93,12 +93,12 @@ typedef struct _bubbler_tilde
 	float X2;
 	float Y1;
 	float Y2;
-	
+
 	float dcOut1;
 	float dcIn1;
-    
+
     float x_f;
-    
+
 } t_bubbler_tilde;
 
 
@@ -125,9 +125,9 @@ static float bubbler_tilde_hermite(float xx, float yy0, float yy1, float yy2, fl
 
 
 static void bubbler_tilde_time(t_bubbler_tilde *x, t_floatarg t)
-{	
+{
 	if(t>10000.0 || t<1.0)
-		error("time value must be >= 1.0 ms and <= 10000.0 ms.");
+		pd_error(x, "time value must be >= 1.0 ms and <= 10000.0 ms.");
 	else
 	{
 		x->x_time = t/1000.0; //convert to seconds
@@ -136,148 +136,148 @@ static void bubbler_tilde_time(t_bubbler_tilde *x, t_floatarg t)
 }
 
 static void bubbler_tilde_time_vari(t_bubbler_tilde *x, t_floatarg tv)
-{	
+{
 	if(tv>100.0 || tv<0.0)
-		error("timeVariation value must be >= 0%% and <= 100%%.");
+		pd_error(x, "timeVariation value must be >= 0%% and <= 100%%.");
 	else
 		x->x_timeVariation = tv/100;
 }
 
 static void bubbler_tilde_feedback(t_bubbler_tilde *x, t_floatarg f)
-{	
+{
 	if(f>200.0 || f<0.0)
-		error("feedback value must be >= 0%% and <= 200%%.");
+		pd_error(x, "feedback value must be >= 0%% and <= 200%%.");
 	else
 		x->x_feedback = f/200;
 }
 
 static void bubbler_tilde_filter_freq(t_bubbler_tilde *x, t_floatarg ff)
-{	
+{
 	if(ff>20000.0 || ff<20.0)
-		error("filterFreq value must be >= 20 Hz and <= 20000 Hz.");
+		pd_error(x, "filterFreq value must be >= 20 Hz and <= 20000 Hz.");
 	else
 		x->x_filterFreq = ff;
 }
 
 static void bubbler_tilde_resonance(t_bubbler_tilde *x, t_floatarg r)
-{	
+{
 	if(r>100 || r<0)
-		error("resonance value must be >= 0%% and <= 100%%.");
+		pd_error(x, "resonance value must be >= 0%% and <= 100%%.");
 	else
 		x->x_resonance = r/100.0;
 }
 
 static void bubbler_tilde_density(t_bubbler_tilde *x, t_floatarg d)
-{	
+{
 	if(d>200 || d<0)
-		error("density value must be >= 0%% and <= 200%%.");
+		pd_error(x, "density value must be >= 0%% and <= 200%%.");
 	else
 		x->x_density = d/200.0;
 }
 
 static void bubbler_tilde_grain_size(t_bubbler_tilde *x, t_floatarg g)
-{	
+{
 	if(g>50 || g<0)
-		error("grainSize value must be >= 0%% and <= 50%%.");
+		pd_error(x, "grainSize value must be >= 0%% and <= 50%%.");
 	else
 		x->x_grainSize = g/50.0;
 }
 
 static void bubbler_tilde_grain_start_vari(t_bubbler_tilde *x, t_floatarg gs)
-{	
+{
 	if(gs>100 || gs<0)
-		error("grainStartVariation value must be >= 0%% and <= 100%%.");
+		pd_error(x, "grainStartVariation value must be >= 0%% and <= 100%%.");
 	else
 		x->x_grainStartVariation = gs/100.0;
 }
 
 static void bubbler_tilde_octave(t_bubbler_tilde *x, t_floatarg o)
-{	
+{
 	if(o > 4.0 || o < -4.0)
-		error("octave value must be >= -4.0 and <= 4.0.");
+		pd_error(x, "octave value must be >= -4.0 and <= 4.0.");
 	else
 		x->x_octave = o;
 }
 
 static void bubbler_tilde_oct_vari(t_bubbler_tilde *x, t_floatarg ov)
-{	
+{
 	if(ov>2.0 || ov<0.0)
-		error("octaveVariation value must be >= 0.0 and <= 2.0.");
+		pd_error(x, "octaveVariation value must be >= 0.0 and <= 2.0.");
 	else
 		x->x_octaveVariation = ov;
 }
 
 static void bubbler_tilde_grain_reversal(t_bubbler_tilde *x, t_floatarg gr)
-{	
+{
 	if(gr>100 || gr<0)
-		error("grainReversal value must be >= 0%% and <= 100%%.");
+		pd_error(x, "grainReversal value must be >= 0%% and <= 100%%.");
 	else
 		x->x_grainReversal = gr/100.0;
 }
 
 static void bubbler_tilde_12tet(t_bubbler_tilde *x)
-{	
+{
 	x->x_just = 0;
 	post("12tet intonation.");
 }
 
 static void bubbler_tilde_just(t_bubbler_tilde *x)
-{	
+{
 	x->x_just = 1;
 	post("just intonation.");
 }
 
 static void bubbler_tilde_pitchOn(t_bubbler_tilde *x, t_float note, t_float vel)
-{	
+{
 	int i, mod_note;
 	t_float octave;
 
 	if(note<0)
 	{
-		error("note values must be positive");
+		pd_error(x, "note values must be positive");
 		return;
 	}
 	else
 		mod_note = (int)note%12;
-	
+
 	if(vel<0)
 		vel=0.0;
 
 	if(x->x_pitch[mod_note] == 0.0f && vel>0)
-	{	
+	{
 		octave = (int)(note/12) - 5;
 		x->x_octave = octave;
-		
+
 		//add a note
 		x->x_pitch[mod_note] = 1.0f;
-		
+
 		// safety: clip numNotes to 0-11 for pitchOn
 		if(x->x_numNotes < 0)
 			x->x_numNotes = 0;
 		else if(x->x_numNotes > 11)
 			x->x_numNotes = 11;
-			
+
 		x->x_pitchOn[x->x_numNotes] = mod_note;
 		x->x_numNotes++;
 	}
 	else if(x->x_pitch[mod_note] == 1.0f && vel==0)
-	{		
+	{
 		// delete a note
 		x->x_pitch[mod_note] = 0.0f;
 		for(i=0; i<12; i++)
-		{	
+		{
 			if(x->x_pitchOn[i] != mod_note)
 				;
 			else
 			{
 				for(; i<11; i++)
 					x->x_pitchOn[i] = x->x_pitchOn[i+1];
-				
+
 				x->x_pitchOn[i] = 0.0;
 				break;
 			}
 		}
-		
+
 		x->x_numNotes--;
 	}
 }
@@ -293,7 +293,7 @@ static void *bubbler_tilde_new()
 	bubbler_tilde_randomULong(&x->x_randSeed);
 	x->x_sr = 44100.0;
 	x->x_n = 64.0;
-	
+
 	for(i=0; i<8; i++)
 	{
 		x->x_grain[i].start = 0;
@@ -310,42 +310,42 @@ static void *bubbler_tilde_new()
 
 	for(i=0; i<DELAYSIZE; i++)
 		x->x_delay[i] = 0.0;
-		
+
 	x->x_delaySize = DELAYSIZE;
 	x->x_delayMask = x->x_delaySize - 1;
-	
+
 	x->x_readPos = x->x_writePos = 0.0;
 	x->x_currentSample = x->x_lastGrainSample = 0.0;
 
 	x->x_time = x->x_fTime = 8.32;
 	x->x_timeInc = (x->x_time - x->x_fTime) /(x->x_sr * 0.1f);
 	x->x_timeVariation = x->x_fTimeVariation = 0.0;
-	
+
 	x->x_feedback = x->x_fFeedback = 0.0;
 	x->x_filterFreq = x->x_fFilterFreq = 20000.0;
 	x->x_resonance = x->x_fResonance = 0.5;
-	
+
 	x->x_density = x->x_fDensity = 0.8;
 	x->x_grainSpacing = 0.0;
 	x->x_grainSize = x->x_fGrain_size = 0.2;
 	x->x_grainSizeVariation = x->x_fGrainSizeVariation = 0.0;
 	x->x_grainStartVariation = x->x_fGrainStartVariation = 0.0;
 	x->x_grainReversal = x->x_fGrainReversal = 0.0;
-	
+
 	x->x_octave = x->x_fOctave = 0.0;
 	x->x_octaveVariation = x->x_fOctaveVariation = 0.0;
 	x->x_just = 0; // 0 is 12tet, 1 is just
-	
+
 	for(i=0; i<12; i++)
 		x->x_pitch[i]=0.0;
 
 	for(i=0; i<12; i++)
 		x->x_pitchOn[i]=0.0;
-		
-		
+
+
 	for(i=0; i<13; i++)
 		x->x_scale[0][i] = pow(2.0, (float)i/12.0);
-		
+
 	x->x_scale[1][0] = 1.0;
 	x->x_scale[1][1] = 16.0/15.0;
 	x->x_scale[1][2] = 9.0/8.0;
@@ -359,18 +359,18 @@ static void *bubbler_tilde_new()
 	x->x_scale[1][10] = 7.0/4.0;
 	x->x_scale[1][11] = 15.0/8.0;
 	x->x_scale[1][12] = 2.0;
-	
+
 	// biquad filter stuff
 	x->X1 = x->X2 = x->Y1 = x->Y2 = 0.0;
 	x->dcOut1 = x->dcIn1 = 0.0f;
-	
+
 	return(void *)x;
 };
 
 static t_int *bubbler_tilde_perform(t_int *w)
 {
 	t_bubbler_tilde *x = (t_bubbler_tilde *)(w[1]);
-	
+
 	t_sample *mainInput = (t_sample *)(w[2]);
 	t_sample *out = (t_sample *)(w[3]);
 	int n = (int)(w[4]);
@@ -387,7 +387,7 @@ static t_int *bubbler_tilde_perform(t_int *w)
 	// feedback filter variables
 	float filterFreq, filterReson, f0, C;
 	float A1, A2, A3, B1, B2;
-	
+
 	float feedbackInc, grainSizeInc, grainSizeVariInc, grainStartVariInc, tempTime, timeVariInc, densityInc, octaveInc, octaveVariationInc, reverseGrainInc;
 	float oneOverFrames;
 	float clipFactor = 1.0f;
@@ -395,15 +395,15 @@ static t_int *bubbler_tilde_perform(t_int *w)
 
 	float grainOut;
 	float floatNote;
-	
+
 	float dcOut0, dcIn0, dcR;
-	
+
 	float delayFrac;
 	long delayLong;
 
     frames = (long)n;
 	oneOverFrames = 1.0/(float)frames;
-	
+
 	// set up for parameter interpolation
 	// graindelay time interpolation set in setParameter
 	feedbackInc = (x->x_feedback - x->x_fFeedback) * oneOverFrames;
@@ -415,11 +415,11 @@ static t_int *bubbler_tilde_perform(t_int *w)
 	octaveInc = (x->x_octave - x->x_fOctave) * oneOverFrames;
 	octaveVariationInc = (x->x_octaveVariation - x->x_fOctaveVariation) * oneOverFrames;
 	reverseGrainInc = (x->x_grainReversal - x->x_fGrainReversal) * oneOverFrames;
-	
+
 	twoPi = 8.0 * atan(1.0);
 	x->x_fResonance = x->x_resonance;
 	x->x_fFilterFreq = x->x_filterFreq;
-	
+
 	dcR = 1.0f - (126.0f/x->x_sr);
 	// filter coefficients get calculated only once per block
 	filterFreq = x->x_fFilterFreq;
@@ -430,9 +430,9 @@ static t_int *bubbler_tilde_perform(t_int *w)
 	if(filterFreq > x->x_sr * 0.5)
 		filterFreq = x->x_sr * 0.5;
 	f0 = filterFreq/x->x_sr;
-	if(f0 < 0.1) 
+	if(f0 < 0.1)
 		C = 1.0 / (f0 * M_PI);
-	else 
+	else
 		C = tan((0.5 - f0) * M_PI);
 	A1 = 1.0 / ( 1.0 + filterReson * C + C * C);
 	A2 = 2.0 * A1;
@@ -442,14 +442,14 @@ static t_int *bubbler_tilde_perform(t_int *w)
 
 	// graindelay processing loop
 	for(frame = 0; frame < frames; frame++, x->x_currentSample++)
-	{		
+	{
 		// 2 - determine the graindelay time and the readPos
 		delayTime = (x->x_fTime * x->x_sr)  + 2.0;
-		
+
 		delayLong = (long)delayTime;
 		delayFrac = delayTime - (float)delayLong;
 		delayFrac = 1.0 - delayFrac;
-		
+
 		// 0 - do we create a new grain
 		// chances of grain creation
 		// 1 grain every duration(samples)/density samples
@@ -461,7 +461,7 @@ static t_int *bubbler_tilde_perform(t_int *w)
 		grainSamples = x->x_fGrain_size * 0.5f * delayTime;
 		if(x->x_fDensity > 0.0f)
 			x->x_grainSpacing = grainSamples/(8.0f * x->x_fDensity);
-		else 
+		else
 			x->x_grainSpacing = 1000000000000000000000000000000000.0f;
 
 		if(x->x_lastGrainSample + x->x_grainSpacing < x->x_currentSample)
@@ -507,13 +507,13 @@ static t_int *bubbler_tilde_perform(t_int *w)
 					octave = x->x_octave;
 					pitchOffset = (long)(octave + octaveVariation);
 					pitch = x->x_pitchOn[(long)floatNote];
-					
+
 					// safety: clip pitch to 0-12 range for x_scale
 					if(pitch < 0)
 						pitch = 0;
 					else if(pitch > 12)
 						pitch = 12;
-						
+
 					freqRatio = x->x_scale[x->x_just][pitch];
 					if(x->x_numNotes == 0)
 						x->x_grain[i].increment = powf(2.0, (float)pitchOffset);
@@ -530,7 +530,7 @@ static t_int *bubbler_tilde_perform(t_int *w)
 					reversal = (((float)x->x_randSeed/4294967296.0));
 					if(reversal < x->x_fGrainReversal)
 						x->x_grain[i].increment = x->x_grain[i].increment * -1.0;
-					
+
 					break;
 				}
 			}
@@ -553,7 +553,7 @@ static t_int *bubbler_tilde_perform(t_int *w)
 					inInd   = (x->x_readPos + 0) & x->x_delayMask;
 					inp1Ind = (x->x_readPos + 1) & x->x_delayMask;
 					inp2Ind = (x->x_readPos + 2) & x->x_delayMask;
-					
+
 					if(inm1Ind >= DELAYSIZE)
 					{
 						inm1Ind = DELAYSIZE-1;
@@ -574,12 +574,12 @@ static t_int *bubbler_tilde_perform(t_int *w)
 						inp2Ind = DELAYSIZE-1;
 						post("over");
 					};
-					
+
 					inm1 = x->x_delay[inm1Ind];
 					in   = x->x_delay[inInd];
 					inp1 = x->x_delay[inp1Ind];
 					inp2 = x->x_delay[inp2Ind];
-					
+
 					grainOut = bubbler_tilde_hermite(delayFrac, inm1, in, inp1, inp2);
 				}
 				if(x->x_grain[i].attackend == x->x_grain[i].decaystart)
@@ -591,14 +591,14 @@ static t_int *bubbler_tilde_perform(t_int *w)
 				output += grainOut * 0.5;
 
 				// in vst this is only if(kMonoMode)
-				x->x_grain[i].readPos += x->x_grain[i].increment;					
+				x->x_grain[i].readPos += x->x_grain[i].increment;
 				while(x->x_grain[i].readPos > (float)x->x_delaySize)
 					x->x_grain[i].readPos -= (float)x->x_delaySize;
 				while(x->x_grain[i].readPos < 0.0)
 					x->x_grain[i].readPos += (float)x->x_delaySize;
 			}
 		}
-		
+
 		feedback = x->x_fFeedback * 2.0f;
 		preFilter = ((output * feedback) + *(mainInput+frame));
 // here's where we filter
@@ -610,20 +610,20 @@ static t_int *bubbler_tilde_perform(t_int *w)
 // bypass the filter if the frequency is high
 		if(x->x_fFilterFreq > 19000) // used to be 0.95 for 0-1 range
 			preClip = preFilter;
-		
+
 		dcIn0 = preClip;
 		dcOut0 = dcIn0 - x->dcIn1 + dcR * x->dcOut1;
 		x->dcOut1 = dcOut0;
 		x->dcIn1 = dcIn0;
 		preClip = dcOut0;
-		
-// the new arctan softclip			
-		*(x->x_delay+x->x_writePos) = atan( preClip * clipFactor )/clipFactor + 0.000001f; 
+
+// the new arctan softclip
+		*(x->x_delay+x->x_writePos) = atan( preClip * clipFactor )/clipFactor + 0.000001f;
 		*(out+frame) = output;
-			
+
 		x->x_writePos++;
 		x->x_writePos &= x->x_delayMask;
-		
+
 		// interpolate
 		x->x_fFeedback += feedbackInc;
 
@@ -641,7 +641,7 @@ static t_int *bubbler_tilde_perform(t_int *w)
 			if(x->x_currentSample > x->x_grain[i].end)
 				x->x_grain[i].active = 0;
 		}
-	
+
 		// a test to see if tempTime has gone past pTime
 		if((tempTime - x->x_time) * (x->x_fTime - x->x_time) < 0.0)
 		{
@@ -651,7 +651,7 @@ static t_int *bubbler_tilde_perform(t_int *w)
 		else
 			x->x_fTime = tempTime;
 	};
-	
+
 	x->x_fFeedback = x->x_feedback;
 	x->x_fTimeVariation = x->x_timeVariation;
 	x->x_fGrain_size = x->x_grainSize;
@@ -661,8 +661,8 @@ static t_int *bubbler_tilde_perform(t_int *w)
 	x->x_fOctave = x->x_octave;
 	x->x_fOctaveVariation = x->x_octaveVariation;
 	x->x_fGrainReversal = x->x_grainReversal;
-	
-	
+
+
 	return(w + 5);
 };
 
@@ -686,7 +686,7 @@ static void bubbler_tilde_dsp(t_bubbler_tilde *x, t_signal **sp)
 
 void setup_0x2bbubbler_tilde(void)
 {
-	bubbler_tilde_class = 
+	bubbler_tilde_class =
 	class_new(
 		gensym("+bubbler~"),
 		(t_newmethod)bubbler_tilde_new,
@@ -706,7 +706,7 @@ void setup_0x2bbubbler_tilde(void)
 	);
 
 	class_addmethod(
-		bubbler_tilde_class, 
+		bubbler_tilde_class,
         (t_method)bubbler_tilde_time,
 		gensym("time"),
 		A_DEFFLOAT,
@@ -714,15 +714,15 @@ void setup_0x2bbubbler_tilde(void)
 	);
 
 	class_addmethod(
-		bubbler_tilde_class, 
+		bubbler_tilde_class,
         (t_method)bubbler_tilde_time_vari,
 		gensym("timeVariation"),
 		A_DEFFLOAT,
 		0
 	);
-	
+
 	class_addmethod(
-		bubbler_tilde_class, 
+		bubbler_tilde_class,
         (t_method)bubbler_tilde_feedback,
 		gensym("feedback"),
 		A_DEFFLOAT,
@@ -730,7 +730,7 @@ void setup_0x2bbubbler_tilde(void)
 	);
 
 	class_addmethod(
-		bubbler_tilde_class, 
+		bubbler_tilde_class,
         (t_method)bubbler_tilde_filter_freq,
 		gensym("filterFreq"),
 		A_DEFFLOAT,
@@ -738,7 +738,7 @@ void setup_0x2bbubbler_tilde(void)
 	);
 
 	class_addmethod(
-		bubbler_tilde_class, 
+		bubbler_tilde_class,
         (t_method)bubbler_tilde_resonance,
 		gensym("resonance"),
 		A_DEFFLOAT,
@@ -746,7 +746,7 @@ void setup_0x2bbubbler_tilde(void)
 	);
 
 	class_addmethod(
-		bubbler_tilde_class, 
+		bubbler_tilde_class,
         (t_method)bubbler_tilde_density,
 		gensym("density"),
 		A_DEFFLOAT,
@@ -754,61 +754,61 @@ void setup_0x2bbubbler_tilde(void)
 	);
 
 	class_addmethod(
-		bubbler_tilde_class, 
+		bubbler_tilde_class,
         (t_method)bubbler_tilde_grain_size,
 		gensym("grainSize"),
 		A_DEFFLOAT,
 		0
 	);
-	
+
 	class_addmethod(
-		bubbler_tilde_class, 
+		bubbler_tilde_class,
         (t_method)bubbler_tilde_grain_start_vari,
 		gensym("grainStartVariation"),
 		A_DEFFLOAT,
 		0
 	);
-	
+
 	class_addmethod(
-		bubbler_tilde_class, 
+		bubbler_tilde_class,
         (t_method)bubbler_tilde_octave,
 		gensym("octave"),
 		A_DEFFLOAT,
 		0
 	);
-	
+
 	class_addmethod(
-		bubbler_tilde_class, 
+		bubbler_tilde_class,
         (t_method)bubbler_tilde_oct_vari,
 		gensym("octaveVariation"),
 		A_DEFFLOAT,
 		0
 	);
-	
+
 	class_addmethod(
-		bubbler_tilde_class, 
+		bubbler_tilde_class,
         (t_method)bubbler_tilde_grain_reversal,
 		gensym("grainReversal"),
 		A_DEFFLOAT,
 		0
 	);
-	
+
 	class_addmethod(
-		bubbler_tilde_class, 
+		bubbler_tilde_class,
         (t_method)bubbler_tilde_12tet,
 		gensym("12tet"),
 		0
 	);
-	
+
 	class_addmethod(
-		bubbler_tilde_class, 
+		bubbler_tilde_class,
         (t_method)bubbler_tilde_just,
 		gensym("just"),
 		0
 	);
-	
+
 	class_addmethod(
-		bubbler_tilde_class, 
+		bubbler_tilde_class,
         (t_method)bubbler_tilde_pitchOn,
 		gensym("pitchOn"),
 		A_DEFFLOAT,

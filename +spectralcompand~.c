@@ -29,7 +29,7 @@ enum
 typedef struct _spectralcompand_tilde
 	{
 		t_object x_obj;         /* obligatory header */
-		
+
 		t_float sampleRate;
 		t_int   bufferPosition;
 		double denormalValue;
@@ -41,10 +41,10 @@ typedef struct _spectralcompand_tilde
 		long halfSizeFFT, sizeFFT;
 		long inputTime, outputTime;
 		float pi, twoPi;
-		
+
 		// these use the external table
 		int x_array_points;
-		t_symbol *x_arrayname;					
+		t_symbol *x_arrayname;
 		t_word *gainTweak;
 
 		// external parameters
@@ -55,7 +55,7 @@ typedef struct _spectralcompand_tilde
 		t_float attack;
 		t_float release;
 		t_float tilt;
-		
+
 		// internal parameters
 		t_float invert;
 		t_float learning;
@@ -66,7 +66,7 @@ typedef struct _spectralcompand_tilde
 		t_float attackFactor;
 		t_float releaseFactor;
 		t_float makeupGain;
-		
+
 		// internal tables
 		float *threshLearn;
 
@@ -75,23 +75,23 @@ typedef struct _spectralcompand_tilde
 		float *squareLevel;
 		float *innerTweak;
 		float *linearTweak;
-		
+
 		float *gainIncrements;
 		float *levelIncrements;
-		
-		
+
+
 	} t_spectralcompand_tilde;
 
 
 /*these functions clip incoming parameter values*/
-void spectralcompand_tilde_set(t_spectralcompand_tilde *x, t_symbol *s) 
+void spectralcompand_tilde_set(t_spectralcompand_tilde *x, t_symbol *s)
 {
 	t_garray *a;
 	int old_array_points;
 	int i;
-	
+
 	old_array_points = x->x_array_points;
-	
+
 	if(!(a = (t_garray *)pd_findbyclass(s, garray_class)))
 	{
 		pd_error(x, "%s: no such array", s->s_name);
@@ -102,7 +102,7 @@ void spectralcompand_tilde_set(t_spectralcompand_tilde *x, t_symbol *s)
 		pd_error(x, "%s: bad template for spectralcompand", s->s_name);
 		x->gainTweak = 0;
 	}
-	else 
+	else
 	{
 		x->x_arrayname = s;
 		garray_resize((t_garray *)pd_findbyclass(x->x_arrayname,garray_class), 513.0);
@@ -111,14 +111,14 @@ void spectralcompand_tilde_set(t_spectralcompand_tilde *x, t_symbol *s)
 		garray_usedindsp(a);
 		for(i = 0; i <= x->halfSizeFFT; i++)
 			x->innerTweak[i] = x->gainTweak[i].w_float = 1.0f;
-	}	
+	}
 }
 
 void spectralcompand_tilde_learnpeak(t_spectralcompand_tilde *x, t_float value)
 {
 	int i;
 	float threshPeak;
-	
+
 	x->peakLearnValue = value;
 	// start threshold learning
 	if(x->peakLearnValue > 0.5f && x->learning == FALSE)
@@ -156,10 +156,10 @@ void spectralcompand_tilde_learnpeak(t_spectralcompand_tilde *x, t_float value)
 		garray_redraw((t_garray *)pd_findbyclass(x->x_arrayname,garray_class));
 }
 
-void spectralcompand_tilde_learnavg(t_spectralcompand_tilde *x, t_float value) 
+void spectralcompand_tilde_learnavg(t_spectralcompand_tilde *x, t_float value)
 {
 	int i;
-		
+
 	float threshPeak;
 
 	x->averageLearnValue = value;
@@ -194,24 +194,24 @@ void spectralcompand_tilde_learnavg(t_spectralcompand_tilde *x, t_float value)
 		}
 		x->learnFrames = 0;
 		x->learning = FALSE;
-	}	
+	}
 	if(x->gainTweak != 0)
 		garray_redraw((t_garray *)pd_findbyclass(x->x_arrayname,garray_class));
 }
 
 // 1 equals TRUE, 0 equals FALSE
-void spectralcompand_tilde_invert(t_spectralcompand_tilde *x, t_float value) 
+void spectralcompand_tilde_invert(t_spectralcompand_tilde *x, t_float value)
 {
-	if(value <= 1 && value >= 0) 
+	if(value <= 1 && value >= 0)
 		x->invertValue = value;
 	else
-		error("invert value must be 0 or 1");
-	
+		pd_error(x, "invert value must be 0 or 1");
+
 	if(x->invertValue >= 0.5f)
 		x->invert = TRUE;
 	else
 		x->invert = FALSE;
-	
+
 }
 
 void spectralcompand_tilde_thresh(t_spectralcompand_tilde *x, t_float f)
@@ -221,11 +221,11 @@ void spectralcompand_tilde_thresh(t_spectralcompand_tilde *x, t_float f)
 
 	if(f>0.0 || f<-96.0)
 	{
-		error("threshold value must be >= -96 and <= 0.");
+		pd_error(x, "threshold value must be >= -96 and <= 0.");
 		return;
 	}
 	else
-		x->thresholdValue = f;		
+		x->thresholdValue = f;
 	x->threshold = powf(10.f, x->thresholdValue * 0.05f);
 	x->thresholdSquare = x->threshold * x->threshold;
 	if(x->ratio >= 1.0f)
@@ -254,23 +254,23 @@ void spectralcompand_tilde_thresh(t_spectralcompand_tilde *x, t_float f)
 	}
 }
 
-void spectralcompand_tilde_ratio(t_spectralcompand_tilde *x, t_float value) 
+void spectralcompand_tilde_ratio(t_spectralcompand_tilde *x, t_float value)
 {
 	long i;
 	float dbLevel, level;
 	if(value > 5.0)
 	{
 		// expansion
-		error("ratio value must be >= 0.2 and <= 5.0");
+		pd_error(x, "ratio value must be >= 0.2 and <= 5.0");
 		value = 5.0;
 	}
 	else if(value < 0.01)
 	{
 		// compression
-		error("ratio value must be >= 0.2 and <= 5.0");
+		pd_error(x, "ratio value must be >= 0.2 and <= 5.0");
 		value = 0.2;
 	}
-	x->ratio = value;				
+	x->ratio = value;
 	if(x->ratio >= 1.0)
 	{
 		for(i = 0; i < kLevelIncrements; i++)
@@ -298,14 +298,14 @@ void spectralcompand_tilde_ratio(t_spectralcompand_tilde *x, t_float value)
 }
 
 void spectralcompand_tilde_attack(t_spectralcompand_tilde *x, t_float f)
-{	
+{
 	if(f<0.0)
 	{
-		error("attack above 0 seconds");
+		pd_error(x, "attack above 0 seconds");
 		return;
 	}
 	else
-		x->attack = f;	
+		x->attack = f;
 	if(x->attack == 0.0f)
 		x->attackFactor = 1.0f/0.001f;
 	else
@@ -313,14 +313,14 @@ void spectralcompand_tilde_attack(t_spectralcompand_tilde *x, t_float f)
 }
 
 void spectralcompand_tilde_release(t_spectralcompand_tilde *x, t_float f)
-{	
+{
 	if(f<0.0)
 	{
-		error("attack above 0 seconds");
+		pd_error(x, "attack above 0 seconds");
 		return;
 	}
 	else
-		x->release = f;	
+		x->release = f;
 	if(x->release == 0.0f)
 		x->releaseFactor = 0.001f;
 	else
@@ -331,32 +331,32 @@ void spectralcompand_tilde_tilt(t_spectralcompand_tilde *x , t_float value)
 {
     int i;
     float tiltBasis;
-    
-    if ((value <= 6) && (value >= -6))  
-	{ 
-		x->tilt = value;	
+
+    if ((value <= 6) && (value >= -6))
+	{
+		x->tilt = value;
 		tiltBasis = log10f((float)x->halfSizeFFT) * 20.0f * 0.5f;
-		
+
 		for(i=0; i <= x->halfSizeFFT; i++)
 			x->tiltTable[i] = powf(10.0f, ((log10f((float)i+1) * 20.0f) -  tiltBasis) * (x->tilt/tiltBasis));
-		
-	} 
+
+	}
 	else
-		error("tilt between -6 and 6 db/oct.");
+		pd_error(x, "tilt between -6 and 6 db/oct.");
 }
 
 void spectralcompand_tilde_gain(t_spectralcompand_tilde *x , t_float value)
 {
-	if ((value <= 24) && (value >= -24))  
+	if ((value <= 24) && (value >= -24))
 		x->makeupGain = powf(10.f, value * 0.05f);
 	else
-		error("gain between -24 and 24 db");
+		pd_error(x, "gain between -24 and 24 db");
 }
 
 
 
 
-void spectralcompand_tilde_initHammingWindows ( t_spectralcompand_tilde *x ) 
+void spectralcompand_tilde_initHammingWindows ( t_spectralcompand_tilde *x )
 {
 	long N, k;
 	N = x->sizeFFT;
@@ -369,15 +369,15 @@ void spectralcompand_tilde_initHammingWindows ( t_spectralcompand_tilde *x )
 void spectralcompand_tilde_scaleWindows (t_spectralcompand_tilde *x) {
 	long i;
 	float a, b, sum, analFactor, synthFactor;
-	
+
 	a = 0.54f;
 	b = 0.46f;
 	sum = 0.0f;
 	for (i = 0; i < x->sizeFFT; i++)
 		sum += x->analysisWindow[i];
-	
+
 	synthFactor = analFactor = 2.0f/sum;
-	
+
 	for (i = 0; i < x->sizeFFT; i++) {
 		x->analysisWindow[i] *= analFactor;
 		x->synthesisWindow[i] *= synthFactor;
@@ -396,17 +396,17 @@ void spectralcompand_tilde_scaleWindows (t_spectralcompand_tilde *x) {
 
 
 
-void *spectralcompand_tilde_new(t_symbol *table) 
+void *spectralcompand_tilde_new(t_symbol *table)
 {
 	long i;
 	t_spectralcompand_tilde *x = (t_spectralcompand_tilde *)pd_new(spectralcompand_tilde_class);
 
 	inlet_new(&x->x_obj, &x->x_obj.ob_pd, gensym("float"),gensym("interptVal")); // make this float inlet?
 	outlet_new(&x->x_obj, gensym("signal"));
-		
+
 	// add method to set table names
-		
-	//	expects 1 table names 
+
+	//	expects 1 table names
 
 	x->gainTweak = 0;
 
@@ -420,12 +420,12 @@ void *spectralcompand_tilde_new(t_symbol *table)
 	x->pi = 4.0f * atanf(1.0f);
 	x->twoPi = 8.0f * atanf(1.0f);
 
-	
+
 	// lots of memory to set up
 	//  first - preset all pointers to zero
 	x->outBuffer = x->inBuffer = x->inWindowed = x->inShift = x->outShift = 0;
 	// second - allocate a huge number of pointers
-		
+
 	x->inBuffer = (float *) malloc(sizeof(float) * x->sizeFFT);
 	x->inWindowed = (float *) malloc(sizeof(float) * x->sizeFFT);
 	x->inShift = (float *) malloc(sizeof(float) * x->sizeFFT);
@@ -433,14 +433,14 @@ void *spectralcompand_tilde_new(t_symbol *table)
 	x->outBuffer = (float *) malloc(sizeof(float) * x->sizeFFT);
 	x->synthesisWindow = (float *) malloc(sizeof(float) * x->sizeFFT);
 	x->analysisWindow = (float *) malloc(sizeof(float) * x->sizeFFT);
-	
+
 	// third - zero out all the memory
 	for(i = 0; i<x->sizeFFT; i++)
 		x->inBuffer[i] = x->outBuffer[i] = x->inShift[i] = x->outShift[i] = 0.0;
-	
+
 	// spectralcompand specific stuff
 	x->gainTable = (float *) malloc(sizeof(float) * x->sizeFFT);
-	x->squareLevel = (float *) malloc(sizeof(float) * x->sizeFFT);		
+	x->squareLevel = (float *) malloc(sizeof(float) * x->sizeFFT);
 	x->tiltTable = (float *) malloc(sizeof(float) * x->sizeFFT);
 	x->threshLearn = (float *) malloc(sizeof(float) * x->sizeFFT);
 
@@ -463,11 +463,11 @@ void *spectralcompand_tilde_new(t_symbol *table)
 		x->innerTweak[i] = 0.0f;
 		x->linearTweak[i] = 1.0f;
 	}
-	
+
 	//        fourth - set up the FFT and windows
-	spectralcompand_tilde_initHammingWindows(x);		// 
+	spectralcompand_tilde_initHammingWindows(x);		//
 	spectralcompand_tilde_scaleWindows(x);				// these we keep
-	
+
 	x->averageLearnValue = 0.0f;
 	x->peakLearnValue = 0.0;
 	x->learning = FALSE;
@@ -477,22 +477,22 @@ void *spectralcompand_tilde_new(t_symbol *table)
 	spectralcompand_tilde_attack(x, 0.1);
 	spectralcompand_tilde_release(x, 0.5);
 	spectralcompand_tilde_tilt(x, 0.0);
-	spectralcompand_tilde_gain(x, 0.0);	
-	if(table) 
-	{  
-		x->x_array_points = 0;	
-		spectralcompand_tilde_set(x,table); 
+	spectralcompand_tilde_gain(x, 0.0);
+	if(table)
+	{
+		x->x_array_points = 0;
+		spectralcompand_tilde_set(x,table);
 	}
-	
+
 	return (x);
 }
 
 
-void spectralcompand_tilde_processSpect(t_spectralcompand_tilde *x) 
-{	
+void spectralcompand_tilde_processSpect(t_spectralcompand_tilde *x)
+{
 	long i, j;
 	float gain;
-	
+
 	// first - get the levels for all bands and identify the peaks
 	// left channel
 	x->squareLevel[0] = x->inWindowed[0] * x->inWindowed[0];
@@ -517,12 +517,12 @@ void spectralcompand_tilde_processSpect(t_spectralcompand_tilde *x)
 		if(x->learnFrames > 40)
 			x->learning = FALSE;
 	}
-	
-	// now we reset the gain table, multiplying by the attackFactor or releaseFactor depending on whether 
+
+	// now we reset the gain table, multiplying by the attackFactor or releaseFactor depending on whether
 	// above or below the threshold
 	for(i = 0; i <= x->halfSizeFFT; i++)
 	{
-			
+
 		if((((x->squareLevel[i] * x->linearTweak[i] * x->tiltTable[i] * x->tiltTable[i]) < (x->thresholdSquare)) && (x->ratio >= 1.0f)) ||
 		   (((x->squareLevel[i] * x->linearTweak[i] * x->tiltTable[i] * x->tiltTable[i]) > (x->thresholdSquare )) && (x->ratio < 1.0f)))
 		{
@@ -572,7 +572,7 @@ void spectralcompand_tilde_block(t_spectralcompand_tilde *x) {
 	//	long j;
 	long maskFFT = x->sizeFFT - 1;
 	float tweakSum;
-	
+
 	if(x->gainTweak != 0)
 	{
 		tweakSum = 0.0f;
@@ -588,13 +588,13 @@ void spectralcompand_tilde_block(t_spectralcompand_tilde *x) {
 		}
 	}
 
-			
-		
+
+
 	// shift data in the outBuffer toward the beginning of the buffer
 	memcpy(x->outBuffer, x->outBuffer+x->blockSize, (x->sizeFFT - x->blockSize) * sizeof(float));
 	// zero out the end of the outBuffer
 	memset(x->outBuffer+(x->sizeFFT - x->blockSize), 0, x->blockSize *  sizeof(float));
-		
+
 	// shift data in the inShift buffer toward the beginning of the buffer
 	memcpy(x->inShift, x->inShift+x->blockSize, (x->sizeFFT - x->blockSize) * sizeof(float));
 	// put new samples in the end of the buffer
@@ -606,14 +606,14 @@ void spectralcompand_tilde_block(t_spectralcompand_tilde *x) {
 		++(x->inputTime);
 		x->inputTime = x->inputTime & maskFFT;
 	}
-	
+
 	mayer_realfft(x->sizeFFT, x->inWindowed);
-		
-	// use averaged table later, for now, this is just straight table 1		
+
+	// use averaged table later, for now, this is just straight table 1
 	spectralcompand_tilde_processSpect(x);
-	
+
 	mayer_realifft(x->sizeFFT, x->outShift);
-		
+
 	// now copy the output into the output buffer, multiplying by the window
 	for(i = 0; i < x->sizeFFT; i++) {
 		*(x->outBuffer + i) += *(x->outShift + x->outputTime) * *(x->synthesisWindow + i);
@@ -631,34 +631,34 @@ void spectralcompand_tilde_block(t_spectralcompand_tilde *x) {
    It's called with a single pointer "w" which is our location in the
    DSP call list.  We return a new "w" which will point to the next item
    after us.  Meanwhile, w[0] is just a pointer to dsp-perform itself
-   (no use to us), w[1] and w[2] are the input and output vector  
+   (no use to us), w[1] and w[2] are the input and output vector
    locations, and w[3] is the number of points to calculate. */
 static t_int *spectralcompand_tilde_perform(t_int *w) {
-		
+
 	t_spectralcompand_tilde *x = (t_spectralcompand_tilde *)(w[1]);
 	t_sample *in = (t_float *)(w[2]);
 	//	t_float *freqResponse = (t_float *)(w[3]);
 	t_sample *out = (t_float *)(w[3]);
 	int n = (int)(w[4]);
-		
+
 	// i like counting from zero, so i use sample to count the offset from
 	// the start of the in and out blocks
 	int i;
 	//	long frames;
 	long framesLeft, processframes;
 	long bandsPerIndex;
-		
+
 	// gotta copy things from the filter input first off
 	// since the block size doesn't always match the number of frequency  bands
 	// lets adjust in our copy
 	bandsPerIndex = kHalfSizeFFT/n;
-		
-		
+
+
 	// framesLeft is the number of samples that have to be copied from *in
 	// this loop continues to copy from in until no samples are left
 
 	framesLeft = n;
-		
+
 	while ( framesLeft > 0 ) {
 		if (framesLeft + x->bufferPosition < x->blockSize)
 			processframes = framesLeft;
@@ -667,10 +667,10 @@ static t_int *spectralcompand_tilde_perform(t_int *w) {
 		// flush out previous output, copy in new input...
 		// x->bufferPosition is used as a way to keep track of position in both
 		// x->inBuffer and x->outBuffer
-			
+
 		memcpy(x->inBuffer+(x->bufferPosition), in, processframes *  sizeof(float));
 
-		for (i=0; i<processframes; i++)	
+		for (i=0; i<processframes; i++)
 		{
 			out[i] = x->outBuffer[i+x->bufferPosition] * x->makeupGain;
 			if(out[i] > 1000.0f)
@@ -678,7 +678,7 @@ static t_int *spectralcompand_tilde_perform(t_int *w) {
 			else if(out[i] < -1000.0f)
 				out[i] = -1000.0f;
 		}
-		// increment in and out pointers        
+		// increment in and out pointers
 		out += processframes;
 		in += processframes;
 		// increment bufferPostion, if the bufferPosition hits the blockSize  (1/4 of FFT size)
@@ -699,68 +699,68 @@ static t_int *spectralcompand_tilde_perform(t_int *w) {
 
 void spectralcompand_tilde_dsp(t_spectralcompand_tilde *x, t_signal **sp) {
 	x->sampleRate = sp[0]->s_sr;
-		
+
 	dsp_add(spectralcompand_tilde_perform, 4, x, sp[0]->s_vec, sp[1]->s_vec, sp[0]->s_n);
 }
-   	
-	
+
+
 // since we allocated some memory, we need a delete function
-static void spectralcompand_tilde_free(t_spectralcompand_tilde *x) 
+static void spectralcompand_tilde_free(t_spectralcompand_tilde *x)
 {
 	if(x->inBuffer != 0) free(x->inBuffer);
 	if(x->inWindowed != 0) free(x->inWindowed);
 	if(x->outBuffer != 0) free(x->outBuffer);
 	if(x->inShift != 0) free(x->inShift);
 	if(x->outShift != 0) free(x->outShift);
-	
+
 	if(x->analysisWindow != 0) free(x->analysisWindow);
 	if(x->synthesisWindow != 0) free(x->synthesisWindow);
-	
+
 	if(x->gainTable != 0) free(x->gainTable);
 	if(x->tiltTable != 0) free(x->tiltTable);
-	
+
 	if(x->threshLearn != 0) free(x->threshLearn);
-	if(x->squareLevel != 0) free(x->squareLevel);		
+	if(x->squareLevel != 0) free(x->squareLevel);
 	if(x->levelIncrements != 0) free(x->levelIncrements);
-	if(x->gainIncrements != 0) free(x->gainIncrements);		
+	if(x->gainIncrements != 0) free(x->gainIncrements);
 	// spectralcompand external specific stuff
-	if(x->innerTweak != 0) free(x->innerTweak);		
-	if(x->linearTweak != 0) free(x->linearTweak);			
+	if(x->innerTweak != 0) free(x->innerTweak);
+	if(x->linearTweak != 0) free(x->linearTweak);
 }
 
-/* this routine, which must have exactly this name (with the "~"  replaced 
+/* this routine, which must have exactly this name (with the "~"  replaced
  * by "_tilde) is called when the code is first loaded, and tells Pd  how to build the "class". */
-      
+
 
 void setup_0x2bspectralcompand_tilde(void) {
-	spectralcompand_tilde_class = class_new(gensym("+spectralcompand~"),  
-				                 (t_newmethod)spectralcompand_tilde_new, 
+	spectralcompand_tilde_class = class_new(gensym("+spectralcompand~"),
+				                 (t_newmethod)spectralcompand_tilde_new,
 								 (t_method)spectralcompand_tilde_free,
-								 sizeof(t_spectralcompand_tilde), 
-								 CLASS_DEFAULT, 
+								 sizeof(t_spectralcompand_tilde),
+								 CLASS_DEFAULT,
 								 A_DEFSYMBOL,
 								 0);
 	/* this is magic to declare that the leftmost, "main" inlet
 	 * takes signals; other signal inlets are done differently... */
 
-	/* also installs delay_time as the leftmost inlet float */	
+	/* also installs delay_time as the leftmost inlet float */
 
 	CLASS_MAINSIGNALIN(spectralcompand_tilde_class, t_spectralcompand_tilde, makeupGain);
 	/* here we tell Pd about the "dsp" method, which is called back when DSP is turned on. */
 
 	class_addmethod(spectralcompand_tilde_class, (t_method) spectralcompand_tilde_dsp, gensym("dsp"), (t_atomtype)0);
-	
+
 	/* a set function to set a threshold table */
 	class_addmethod(spectralcompand_tilde_class, (t_method) spectralcompand_tilde_set, gensym("set"), A_SYMBOL, 0);
 
 	class_addmethod(spectralcompand_tilde_class, (t_method) spectralcompand_tilde_learnpeak, gensym("learnpeak"), A_DEFFLOAT,0);
 	class_addmethod(spectralcompand_tilde_class, (t_method) spectralcompand_tilde_learnavg, gensym("learnavg"), A_DEFFLOAT,0);
 	class_addmethod(spectralcompand_tilde_class, (t_method) spectralcompand_tilde_invert, gensym("invert"), A_DEFFLOAT,0);
-		
+
 	class_addmethod(spectralcompand_tilde_class, (t_method)spectralcompand_tilde_thresh, gensym("threshold"), A_DEFFLOAT, 0);
 	class_addmethod(spectralcompand_tilde_class, (t_method)spectralcompand_tilde_ratio, gensym("ratio"), A_DEFFLOAT,0);
 	class_addmethod(spectralcompand_tilde_class, (t_method)spectralcompand_tilde_attack, gensym("attack"), A_DEFFLOAT,0);
 	class_addmethod(spectralcompand_tilde_class, (t_method)spectralcompand_tilde_release, gensym("release"), A_DEFFLOAT,0);
-	class_addmethod(spectralcompand_tilde_class, (t_method)spectralcompand_tilde_tilt, gensym("tilt"), A_DEFFLOAT, 0); 		
-	class_addmethod(spectralcompand_tilde_class, (t_method)spectralcompand_tilde_gain, gensym("gain"), A_DEFFLOAT, 0); 		
+	class_addmethod(spectralcompand_tilde_class, (t_method)spectralcompand_tilde_tilt, gensym("tilt"), A_DEFFLOAT, 0);
+	class_addmethod(spectralcompand_tilde_class, (t_method)spectralcompand_tilde_gain, gensym("gain"), A_DEFFLOAT, 0);
 }

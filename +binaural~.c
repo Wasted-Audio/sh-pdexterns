@@ -1,7 +1,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h> 
+#include <stdlib.h>
 #include "m_pd.h"
 #ifdef NT
 #pragma warning( disable : 4244 )
@@ -33,7 +33,7 @@ enum
 };
 
 
-typedef struct 
+typedef struct
 {
 	float azimuth;
 	float elevation;
@@ -41,7 +41,7 @@ typedef struct
 	float *farEar;
 }hrtfPosition;
 
-typedef struct 
+typedef struct
 {
 	long numPositions;
 	float gain;
@@ -52,7 +52,7 @@ typedef struct
 
 typedef struct _binaural
 {
-	
+
 	t_object x_obj;
 	t_float x_f; //current sample
 	t_float azimuth;
@@ -60,7 +60,7 @@ typedef struct _binaural
 
 	t_float sampleRate;
 	t_int   bufferPosition;
-	
+
 	long filterSet;
 	float currentAzimuth;
 	int lastFilterFilled;
@@ -104,7 +104,7 @@ static void binaural_azimuth(t_binaural *x, t_float value)
 {
 	if(value<-180.0||value>180.0)
 	{
-		error("angle value must be between -180 and 180");
+		pd_error(x, "angle value must be between -180 and 180");
 		return;
 	}
 	else
@@ -114,8 +114,8 @@ static void binaural_azimuth(t_binaural *x, t_float value)
 }
 
 static void binaural_gain(t_binaural *x, t_float value)
-{	
-	
+{
+
 	x->gain = powf(10.f, (value * 0.05f));
 }
 
@@ -150,8 +150,8 @@ void binaural_ProcessMotion(t_binaural *x)
 // fade between 3 filters. too much processing though. instead, i will cross fade up
 // to the position, then next block will start at the position and go a little faster
 // hopefully this cheat will be clean.
-		
-	// a - get ready for a new position	
+
+	// a - get ready for a new position
 	binaural_newImpulse(x);
 
 	// b - get new samples and FFT
@@ -174,7 +174,7 @@ void binaural_ProcessMotion(t_binaural *x)
 
 	mayer_realifft(x->sizeFFT, x->outLeftSpectra);
 	memcpy(x->outputLeftA, x->outLeftSpectra, x->sizeFFT * sizeof(float));
-				
+
 	// left high angle
     x->outLeftSpectra[0] = x->impulseLeftBSpectra[0] * x->inSpectra[0];	// DC Component
     x->outLeftSpectra[x->halfSizeFFT] = x->impulseLeftBSpectra[x->halfSizeFFT] * x->inSpectra[x->halfSizeFFT];	// Nyquist Frequency
@@ -186,7 +186,7 @@ void binaural_ProcessMotion(t_binaural *x)
 
 	mayer_realifft(x->sizeFFT, x->outLeftSpectra);
 	memcpy(x->outputLeftB, x->outLeftSpectra, x->sizeFFT * sizeof(float));
-	
+
 	// right low angle
     x->outRightSpectra[0] = x->impulseRightASpectra[0] * x->inSpectra[0];	// DC Component
     x->outRightSpectra[x->halfSizeFFT] = x->impulseRightASpectra[x->halfSizeFFT] * x->inSpectra[x->halfSizeFFT];	// Nyquist Frequency
@@ -198,7 +198,7 @@ void binaural_ProcessMotion(t_binaural *x)
 
 	mayer_realifft(x->sizeFFT, x->outRightSpectra);
 	memcpy(x->outputRightA, x->outRightSpectra, x->sizeFFT * sizeof(float));
-	
+
 	// right high angle
     x->outRightSpectra[0] = x->impulseRightBSpectra[0] * x->inSpectra[0];	// DC Component
     x->outRightSpectra[x->halfSizeFFT] = x->impulseRightBSpectra[x->halfSizeFFT] * x->inSpectra[x->halfSizeFFT];	// Nyquist Frequency
@@ -222,7 +222,7 @@ void binaural_ProcessMotion(t_binaural *x)
 		x->outputRightB[n] = x->outputRightB[n] + x->overlapRightB[n];
 		x->overlapRightB[n] = x->outputRightB[x->sizeImpulse + n];
 	}
-	// e - write stuff out	
+	// e - write stuff out
 	for(i = 0; i < x->sizeImpulse; i++)
 	{
 		*(x->outBufferL+i) = (*(x->outputLeftA+i) + ((*(x->outputLeftB+i) - *(x->outputLeftA+i)) * x->mix)) * x->gain;
@@ -236,7 +236,7 @@ short binaural_newImpulse(t_binaural *x)
 {
 	long n;
 	float rotatedAzimuth;
-	
+
 	switch(x->filterSet)
 	{
 		case 0:
@@ -246,13 +246,13 @@ short binaural_newImpulse(t_binaural *x)
 			x->currentFilter = &x->filterTwo;
 			break;
 	}
-		
+
 	// go from -180 - 0 - 180 to 0 - 360
 	if(x->azimuth < 0)
 		rotatedAzimuth = x->azimuth + 360.0f;
 	else
 		rotatedAzimuth = x->azimuth;
-		
+
 //	if(filterSwitch == false)
 //		return(false);
 //	filterSwitch = false;
@@ -278,7 +278,7 @@ short binaural_newImpulse(t_binaural *x)
 	}
 	// without limits
 //	currentAzimuth = rotatedAzimuth;
-	
+
 	while(x->currentAzimuth >= 360.0f)
 		x->currentAzimuth -= 360.0f;
 	while(x->currentAzimuth < 0.0f)
@@ -295,7 +295,7 @@ short binaural_newImpulse(t_binaural *x)
 
 		mayer_realfft(x->sizeFFT, x->impulseLeftB);
 		memcpy(x->impulseLeftBSpectra, x->impulseLeftB, x->sizeFFT * sizeof(float));
-		
+
 		mayer_realfft(x->sizeFFT, x->impulseRightB);
 		memcpy(x->impulseRightBSpectra, x->impulseRightB, x->sizeFFT * sizeof(float));
 
@@ -313,7 +313,7 @@ short binaural_newImpulse(t_binaural *x)
 		}
 		mayer_realfft(x->sizeFFT, x->impulseLeftA);
 		memcpy(x->impulseLeftASpectra, x->impulseLeftA, x->sizeFFT * sizeof(float));
-		
+
 		mayer_realfft(x->sizeFFT, x->impulseRightA);
 		memcpy(x->impulseRightASpectra, x->impulseRightA, x->sizeFFT * sizeof(float));
 
@@ -404,7 +404,7 @@ void binaural_findImpulse(t_binaural *x, float *pImpulseL, float *pImpulseR, flo
 			}
 			else
 			{
-				if((x->currentFilter->position[i].azimuth <= (360.0f - pAzimuth)) 
+				if((x->currentFilter->position[i].azimuth <= (360.0f - pAzimuth))
 					&& (x->currentFilter->position[j].azimuth >= (360.0f - pAzimuth)))
 				{
 					// we have a match for filter one and two
@@ -421,7 +421,7 @@ void binaural_findImpulse(t_binaural *x, float *pImpulseL, float *pImpulseR, flo
 			}
 		}
 	}
-	
+
 	binaural_mixImpulse(filterOneL, filterTwoL, pImpulseL, ratio);
 	binaural_mixImpulse(filterOneR, filterTwoR, pImpulseR, ratio);
 }
@@ -429,7 +429,7 @@ void binaural_findImpulse(t_binaural *x, float *pImpulseL, float *pImpulseR, flo
 void binaural_copyImpulse(float source[], float target[], long delay)
 {
 	long m, n;
-	
+
 	for(n = 0; n < delay; n++)
 		target[n] = 0.0;
 	for(m = 0; n < BINAURAL_BLOCK_SIZE; n++, m++)
@@ -447,7 +447,7 @@ void binaural_mixImpulse(float sourceA[], float sourceB[], float target[], float
 
 void binaural_initHRTF(t_binaural *x)
 {
-	 
+
 	// read in HRTF KEMAR
 	x->filterOne.numPositions = 37;
 	x->filterOne.gain = 0.2630891791f;
@@ -638,7 +638,7 @@ void binaural_initHRTF(t_binaural *x)
 	x->filterOne.position[36].elevation = 0.0f;
 	x->filterOne.position[36].nearEar = H0e180aright;
 	x->filterOne.position[36].farEar = H0e180aleft;
-/*	
+/*
 	// read in HRTF D
 	filterOne.numPositions = 36;
 	filterOne.gain = 0.4510151663f;
@@ -823,7 +823,7 @@ void binaural_initHRTF(t_binaural *x)
 	filterOne.position[35].elevation = 0.0f;
 	filterOne.position[35].nearEar = d180l;
 	filterOne.position[35].farEar = d180r;
-*/	
+*/
 	// read in HRTF C
 	x->filterTwo.numPositions = 7;
 	x->filterTwo.gain = 0.5405306362f;
@@ -870,7 +870,7 @@ static void *binaural_new(t_floatarg f)
 {
     long sizeConvolution, i;
 	float Pi, twoPi;
-	
+
 	t_binaural *x = (t_binaural *)pd_new(binaural_class);
 
     outlet_new(&x->x_obj, gensym("signal"));
@@ -920,7 +920,7 @@ static void *binaural_new(t_floatarg f)
 	x->impulseRightBSpectra = (float *) malloc(sizeof(float) * x->sizeFFT);
 	x->outLeftSpectra = (float *) malloc(sizeof(float) * x->sizeFFT);
 	x->outRightSpectra = (float *) malloc(sizeof(float) * x->sizeFFT);
-		
+
 	x->height = EAR_LEVEL;
 	/*if(allocMem() == false)
 		return(false);*/
@@ -934,7 +934,7 @@ static void *binaural_new(t_floatarg f)
 	x->currentFilter = &x->filterOne;
 
 	binaural_azimuth(x, f);
-	
+
     return (x);
 }
 
@@ -951,12 +951,12 @@ static t_int *binaural_perform(t_int *w)
 
 	int i, framesLeft, processframes;
 
-	
+
 	framesLeft = sampleframes;
 	while (framesLeft > 0)
 	{
 		// how many frames can we process now
-		// with this we insure that we stop on the 
+		// with this we insure that we stop on the
 		// BINAURAL_BLOCK_SIZE boundary
 		if(framesLeft+x->bufferPosition < BINAURAL_BLOCK_SIZE)
 			processframes = framesLeft;
@@ -968,7 +968,7 @@ static t_int *binaural_perform(t_int *w)
 		{
 			outL[i] = x->outBufferL[i+x->bufferPosition];
 			outR[i] = x->outBufferR[i+x->bufferPosition];
-		}		
+		}
 		x->bufferPosition += processframes;
 		// if over the midpoint boundry, we process a new block
 		if(x->bufferPosition == BINAURAL_BLOCK_SIZE)
@@ -988,7 +988,7 @@ static t_int *binaural_perform(t_int *w)
 
   //  while (n-- > 0)
   //  {
-  //      *outL++ = *in++; 
+  //      *outL++ = *in++;
 		//*outR++ = *in++;
   //  }
     return (w+6);
@@ -1001,7 +1001,7 @@ static void binaural_dsp(t_binaural *x, t_signal **sp)
 }
 
 
-static void binaural_free(t_binaural *x) 
+static void binaural_free(t_binaural *x)
 {
 	if(x->inBuffer != 0) free(x->inBuffer);
 	if(x->outBufferL != 0) free(x->outBufferL);
@@ -1011,32 +1011,32 @@ static void binaural_free(t_binaural *x)
 	if(x->impulseRightA != 0) free(x->impulseRightA);
 	if(x->impulseLeftB != 0) free(x->impulseLeftB);
 	if(x->impulseRightB != 0) free(x->impulseRightB);
-	
+
 	if(x->inputDouble != 0) free(x->inputDouble);
-	
+
 	if(x->outputLeftA != 0) free(x->outputLeftA);
 	if(x->outputRightA != 0) free(x->outputRightA);
 	if(x->outputLeftB != 0) free(x->outputLeftB);
 	if(x->outputRightB != 0) free(x->outputRightB);
-	
+
 	if(x->overlapLeftA != 0) free(x->overlapLeftA);
 	if(x->overlapRightA != 0) free(x->overlapRightA);
 	if(x->overlapLeftB != 0) free(x->overlapLeftB);
 	if(x->overlapRightB != 0) free(x->overlapRightB);
-	
+
 	if(x->inSpectra != 0) free(x->inSpectra);
-	
+
 	if(x->impulseLeftASpectra != 0) free(x->impulseLeftASpectra);
 	if(x->impulseRightASpectra != 0) free(x->impulseRightASpectra);
 	if(x->impulseLeftBSpectra != 0) free(x->impulseLeftBSpectra);
 	if(x->impulseRightBSpectra != 0) free(x->impulseRightBSpectra);
-	
+
 	if(x->outLeftSpectra != 0) free(x->outLeftSpectra);
 	if(x->outRightSpectra != 0) free(x->outRightSpectra);
 
 	if(x->filterOne.position != 0) free(x->filterOne.position);
 	if(x->filterTwo.position != 0) free(x->filterTwo.position);
-	
+
 	x->outBufferL = x->outBufferR = x->inBuffer = 0;
 	x->impulseRightA = x->impulseLeftA = x->impulseRightB = x->impulseLeftB = 0;
 	x->outputRightA = x->outputLeftA = x->outputRightB = x->outputLeftB = x->inputDouble = 0;
@@ -1057,4 +1057,3 @@ void setup_0x2bbinaural_tilde(void)
 	class_addmethod(binaural_class, (t_method)binaural_filterSet, gensym("filterSet"), A_DEFFLOAT, 0);
 
 }
-

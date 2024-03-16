@@ -63,9 +63,9 @@ static float pitchdelay_tilde_hermite(float xx, float yy0, float yy1, float yy2,
 
 
 static void pitchdelay_tilde_time(t_pitchdelay_tilde *x, t_floatarg t)
-{	
+{
 	if(t>5000.0 || t<1.0)
-		error("time value must be >= 1.0 ms and <= 5000.0 ms.");
+		pd_error(x, "time value must be >= 1.0 ms and <= 5000.0 ms.");
 	else
 	{
 		x->x_time = t/1000.0;
@@ -75,37 +75,37 @@ static void pitchdelay_tilde_time(t_pitchdelay_tilde *x, t_floatarg t)
 
 // need discrete just/eq temp steps
 static void pitchdelay_tilde_pitchFactor(t_pitchdelay_tilde *x, t_floatarg pf)
-{	
+{
 	if( pf>34 || pf<0 )
-		error("pitchFactor values must between 0 and 1200 cents.");
+		pd_error(x, "pitchFactor values must between 0 and 1200 cents.");
 	else
 		x->x_pitchShift = pf; // 0-34 for indexing into pitchFactor
 }
 
 static void pitchdelay_tilde_feedback(t_pitchdelay_tilde *x, t_floatarg f)
-{	
+{
 	if(f>200.0 || f<0.0)
-		error("feedback value must be >= 0%% and <= 200%%.");
+		pd_error(x, "feedback value must be >= 0%% and <= 200%%.");
 	else
 		x->x_feedback = f/200.0;
 }
 
 static void pitchdelay_tilde_octave(t_pitchdelay_tilde *x, t_floatarg o)
-{	
+{
 	if(o > 3.0 || o < -3.0)
-		error("octave value must be >= -3.0 and <= 3.0.");
+		pd_error(x, "octave value must be >= -3.0 and <= 3.0.");
 	else
 		x->x_octave = o;
 }
 
 static void pitchdelay_tilde_loopDepth(t_pitchdelay_tilde *x, t_floatarg d)
-{	
+{
 	float diff;
-	
+
 	diff = (x->x_loopDepth - x->x_fLoopDepth);
-	
+
 	if(d>100.0 || d<10.0)
-		error("lfoDepth value must be >= 10.0%% and <= 100.0%%.");
+		pd_error(x, "lfoDepth value must be >= 10.0%% and <= 100.0%%.");
 	else
 	{
 		x->x_loopDepth = d/100.0;
@@ -115,7 +115,7 @@ static void pitchdelay_tilde_loopDepth(t_pitchdelay_tilde *x, t_floatarg d)
 }
 
 static void *pitchdelay_tilde_new()
-{	
+{
 	t_pitchdelay_tilde *x = (t_pitchdelay_tilde *)pd_new(pitchdelay_tilde_class);
 	int i;
 
@@ -123,7 +123,7 @@ static void *pitchdelay_tilde_new()
 
 	x->x_sr = 44100.0;
 	x->x_n = 64.0;
-	
+
 	for(i=0; i<DELAYSIZE; i++)
 		x->x_delay[i] = 0.0;
 
@@ -136,7 +136,7 @@ static void *pitchdelay_tilde_new()
 
 	x->x_time = x->x_fTime = 0.3;
 	x->x_timeInc = 0.0;
-	
+
 	x->x_pitchFactor[0] = 1.0f;
 	x->x_pitchFactor[1] = pow(2.0, 1.0/12.0);	//1.05946
 	x->x_pitchFactor[2] = 16.0f/15.0f;			//1.06666
@@ -172,14 +172,14 @@ static void *pitchdelay_tilde_new()
 	x->x_pitchFactor[32] = 15.0f/8.0f;			//1.875
 	x->x_pitchFactor[33] = pow(2.0, 11.0/12.0);	//1.88774
 	x->x_pitchFactor[34] = 2.0f/1.0f;			//2.0
-	
+
 	x->x_pitchShift = 0;
 	x->x_feedback = x->x_fFeedback = 0.5;
 	x->x_octave = 0;
 	x->x_loopDepth = x->x_fLoopDepth = 0.25;
 	x->x_depthInc = 0.0;
 	x->x_depthIncTicks = 0;
-	
+
 	x->x_rampTableSize = DELAYSIZE;
 	x->x_rampIncrement = 0.0f;
 	x->x_rampPhaseA = 0.0f;
@@ -189,14 +189,14 @@ static void *pitchdelay_tilde_new()
 	x->x_readPosA = x->x_readPosB = x->x_writePos = 0.0;
 
 	x->x_dcIn1 = x->x_dcOut1 = 0.0;
-	
+
 	return(void *)x;
 };
 
 static t_int *pitchdelay_tilde_perform(t_int *w)
 {
 	t_pitchdelay_tilde *x = (t_pitchdelay_tilde *)(w[1]);
-	
+
 	t_sample *in1 = (t_sample *)(w[2]);
 	t_sample *out = (t_sample *)(w[3]);
 	int n = (int)(w[4]);
@@ -206,7 +206,7 @@ static t_int *pitchdelay_tilde_perform(t_int *w)
 	float outputA, delayTime, delayTimeA, delayTimeB;
 	float outputB;
 	float preClip;
-	
+
 	float dcOut0, dcIn0, dcR;
 	float feedbackInc, tempTime;
 	float oneOverFrames = 1.0/(float)n;
@@ -218,30 +218,30 @@ static t_int *pitchdelay_tilde_perform(t_int *w)
 	float delayFracB;
 	float octave;
 	long delayLong;
-	
+
 	dcR = 1.0f - (126.0f/x->x_sr);
 	// set up for parameter interpolation
 	// delay time interpolation set in setParameter
 	feedbackInc = (x->x_feedback - x->x_fFeedback) * oneOverFrames;
-	
+
 	index = x->x_pitchShift;
 
 	octave = x->x_octave;
 	x->x_rampIncrement = (x->x_pitchFactor[index] * pow(2.0, octave)) - 1.0f;
-	
+
 
 	// delay processing loop
 	for(frame = 0; frame < n; frame++)
 	{
 		// 2 - determine the delay time and the readPos
 		delayTime = x->x_fTime * x->x_sr;
-		
+
 		if(x->x_fLoopDepth < 0.01f)
 			x->x_fLoopDepth = 0.01f;
-		
+
 		x->x_rampOutA += x->x_rampIncrement;
 		x->x_rampOutB = x->x_rampOutA + (delayTime * x->x_fLoopDepth);
-		
+
 		// calculate lowest and highest delay
 		maxDelayMod = delayTime * x->x_fLoopDepth;
 		minDelayMod = -maxDelayMod;
@@ -253,7 +253,7 @@ static t_int *pitchdelay_tilde_perform(t_int *w)
 			x->x_rampOutA += (2.0f * maxDelayMod);
 		while(x->x_rampOutB <= minDelayMod)
 			x->x_rampOutB += (2.0f * maxDelayMod);
-		
+
 		x->x_rampPhaseA = x->x_rampTableSize*(x->x_rampOutA + maxDelayMod)/(2.0f*maxDelayMod);
 		x->x_rampPhaseB = x->x_rampTableSize*(x->x_rampOutB + maxDelayMod)/(2.0f*maxDelayMod);
 		while(x->x_rampPhaseA>=x->x_rampTableSize)
@@ -267,7 +267,7 @@ static t_int *pitchdelay_tilde_perform(t_int *w)
 		// a two sample buffer for the hermite interpolation
 		delayTimeA = delayTime - x->x_rampOutA + 2.0f;
 		delayTimeB = delayTime - x->x_rampOutB + 2.0f;
-		
+
 
 		delayLong = (long)delayTimeA;
 		delayFracA = delayTimeA - (float)delayLong;
@@ -283,9 +283,9 @@ static t_int *pitchdelay_tilde_perform(t_int *w)
 		delayFracB = 1.0 - delayFracB;
 		x->x_readPosB = x->x_writePos - delayLong;
 		x->x_readPosB &= x->x_delayMask;
-			
+
 		feedback = ((x->x_fFeedback * 2.0f));
-			
+
 			// 3 calculate output
 			// our hermite spline function
 			// we grab the 2 points before and 2 points after the
@@ -316,17 +316,17 @@ static t_int *pitchdelay_tilde_perform(t_int *w)
 		x->x_dcIn1 = dcIn0;
 		preClip = dcOut0;
 
-		// the new arctan softclip			
-		*(x->x_delay+x->x_writePos) = atan( preClip * clipFactor )/clipFactor + 0.000001f; 
+		// the new arctan softclip
+		*(x->x_delay+x->x_writePos) = atan( preClip * clipFactor )/clipFactor + 0.000001f;
 		*(out+frame) = outputA;
-				
+
 		x->x_writePos++;
 		x->x_writePos &= x->x_delayMask;
-		
+
 		// interpolate
 		x->x_fFeedback += feedbackInc;
 		x->x_fLoopDepth += x->x_depthInc;
-		
+
 		tempTime = x->x_fTime + x->x_timeInc;
 
 		// a test to see if tempTime has gone past pTime
@@ -337,7 +337,7 @@ static t_int *pitchdelay_tilde_perform(t_int *w)
 		}
 		else
 			x->x_fTime = tempTime;
-	
+
 	};
 
 	if( x->x_depthIncTicks==0 )
@@ -347,9 +347,9 @@ static t_int *pitchdelay_tilde_perform(t_int *w)
 	}
 	else
 		x->x_depthIncTicks--;
-		
+
 	x->x_fFeedback = x->x_feedback;
-	
+
 	return(w + 5);
 };
 
@@ -373,7 +373,7 @@ static void pitchdelay_tilde_dsp(t_pitchdelay_tilde *x, t_signal **sp)
 
 void setup_0x2bpitchdelay_tilde(void)
 {
-	pitchdelay_tilde_class = 
+	pitchdelay_tilde_class =
 	class_new(
 		gensym("+pitchdelay~"),
 		(t_newmethod)pitchdelay_tilde_new,
@@ -393,7 +393,7 @@ void setup_0x2bpitchdelay_tilde(void)
 	);
 
 	class_addmethod(
-		pitchdelay_tilde_class, 
+		pitchdelay_tilde_class,
         (t_method)pitchdelay_tilde_time,
 		gensym("time"),
 		A_DEFFLOAT,
@@ -401,7 +401,7 @@ void setup_0x2bpitchdelay_tilde(void)
 	);
 
 	class_addmethod(
-		pitchdelay_tilde_class, 
+		pitchdelay_tilde_class,
         (t_method)pitchdelay_tilde_pitchFactor,
 		gensym("pitchFactor"),
 		A_DEFFLOAT,
@@ -409,15 +409,15 @@ void setup_0x2bpitchdelay_tilde(void)
 	);
 
 	class_addmethod(
-		pitchdelay_tilde_class, 
+		pitchdelay_tilde_class,
         (t_method)pitchdelay_tilde_feedback,
 		gensym("feedback"),
 		A_DEFFLOAT,
 		0
 	);
-	
+
 	class_addmethod(
-		pitchdelay_tilde_class, 
+		pitchdelay_tilde_class,
         (t_method)pitchdelay_tilde_octave,
 		gensym("octave"),
 		A_DEFFLOAT,
@@ -425,7 +425,7 @@ void setup_0x2bpitchdelay_tilde(void)
 	);
 
 	class_addmethod(
-		pitchdelay_tilde_class, 
+		pitchdelay_tilde_class,
         (t_method)pitchdelay_tilde_loopDepth,
 		gensym("loopDepth"),
 		A_DEFFLOAT,
