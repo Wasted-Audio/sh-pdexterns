@@ -110,7 +110,7 @@ jobs:
 # ===============================================================
 # ===============================================================
   Mac-ARM:
-    runs-on: macos-latest
+    runs-on: macos-latest-xlarge
     steps:
     - uses: actions/checkout@v4
       with:
@@ -123,7 +123,7 @@ jobs:
 
     - name: Build pd-SoundHack
       run: |
-        make install PDLIBDIR=./pd-SoundHack PLATFORM=aarch64-apple-darwin
+        make install PDLIBDIR=./pd-SoundHack
 
     - name: Upload Zip
       uses: actions/upload-artifact@v4
