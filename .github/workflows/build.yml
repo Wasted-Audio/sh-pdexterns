@@ -123,6 +123,31 @@ jobs:
 
     - name: Build pd-SoundHack
       run: |
+        make install PDLIBDIR=./pd-SoundHack arch=arm64
+
+    - name: Upload Zip
+      uses: actions/upload-artifact@v4
+      with:
+        name: SoundHack-macoOS-arm
+        path: ./pd-SoundHack/*
+
+# ===============================================================
+# ===============================================================
+# ===============================================================
+  Mac-Universal:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: set Enviroment
+      run: |
+        brew cleanup --prune=all
+        brew install --cask pd
+
+    - name: Build pd-SoundHack
+      run: |
         make install PDLIBDIR=./pd-SoundHack arch="x86_64 arm64"
 
     - name: Upload Zip
